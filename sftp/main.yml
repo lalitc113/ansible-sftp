@@ -46,7 +46,7 @@
         group: root
         mode: 0775
       loop:
-        - /var/data/imr_files/imr_acq_to_web_ftp/{{ sftpuser }}
+        - /var/sftpdata/{{ sftpuser }}
 
     - name: Creating Data directory
       file:
@@ -56,24 +56,24 @@
         group: "{{ tomcatgrp }}"
         mode: 0770
       loop:
-        - /var/data/imr_files/imr_acq_to_web_ftp/{{ sftpuser }}/upload
-        - /var/data/imr_files/imr_acq_to_web_ftp/{{ sftpuser }}/download
+        - /var/sftpdata/{{ sftpuser }}/upload
+        - /var/sftpdata/{{ sftpuser }}/download
 
     - name: Check if IP address is already defined
       lineinfile:
         state: absent
-        path: "/opt/admin_script/firewallScript.sh"
+        path: "/opt/fw_script/firewallScript.sh"
         regexp: "{{ sftpip }}"
       check_mode: true
-      changed_when: false # This just makes things look prettier in the logs
+      changed_when: false
       register: check
 
     - name: Adding ip if undefined
       replace:
-        path: "/opt/admin_script/firewallScript.sh"
+        path: "/opt/fw_script/firewallScript.sh"
         regexp: '8.8.8.8'
         replace: "8.8.8.8 {{ sftpip }}"
       when: check.found == 0
 
     - name: Apply IPtables
-      command: bash /opt/admin_script/firewallScript.sh
+      command: bash /opt/fw_script/firewallScript.sh
