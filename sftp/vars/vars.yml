@@ -8,7 +8,7 @@
 - name: SFTP Group1 name
   set_fact: sftpgroup=sftpgroup
 
-- name: Tomcat User name
+- name: tomcat User name
   set_fact: tomcatgrp=tomcatgrp
 
 - name: SFTP IP Address
