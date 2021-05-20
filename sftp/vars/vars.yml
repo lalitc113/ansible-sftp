@@ -1,0 +1,15 @@
+---
+#
+# Setting variables
+################################################################################
+- name: SFTP User name
+  set_fact: sftpuser=user1
+
+- name: SFTP Group1 name
+  set_fact: sftpgroup=sftpgroup
+
+- name: Tomcat User name
+  set_fact: tomcatgrp=tomcatgrp
+
+- name: SFTP IP Address
+  set_fact: sftpip="11.11.11.11 22.22.22.22"

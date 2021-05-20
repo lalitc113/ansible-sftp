@@ -1,0 +1,79 @@
+---
+ - hosts: imr
+   become: yes
+   tasks:
+    - name: Applying the user info var files
+      import_tasks: 'vars/vars.yml'
+
+    - name: Checking if users already created or not
+      command: getent passwd {{ sftpuser }}
+      register: getent_passwd
+      ignore_errors: true
+
+    - name: Creating SFTP user on IMR "{{ sftpuser }}"
+      user: 
+       name: "{{ sftpuser }}"
+       password: "{{ lookup('password', 'credentials/{{ sftpuser }} length=12 chars=ascii_letters,digits,hexdigits,punctuation') | password_hash('sha512') }}"
+       createhome: yes
+       shell: /bin/bash
+       groups: "{{ sftpgroup }}, {{ tomcatgrp }}"
+       state: present
+      when: getent_passwd.rc == 2
+
+    - name: Add .ssh directories
+      file:
+         path: /home/{{ sftpuser }}/.ssh
+         state: directory
+         mode: 0700
+         owner: "{{ sftpuser }}"
+         group: "{{ sftpuser }}"
+      #with_items: user2
+
+    - name: Setting up ssh-key
+      copy:
+        src: keys/{{ sftpuser }}.pub
+        dest: /home/{{ sftpuser }}/.ssh/authorized_keys
+        mode: 0600
+        owner: "{{ sftpuser }}"
+        group: "{{ sftpuser }}"
+      #with_items: user2
+
+    - name: Creating SFTP directory
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: 0775
+      loop:
+        - /var/data/imr_files/imr_acq_to_web_ftp/{{ sftpuser }}
+
+    - name: Creating Data directory
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ sftpuser }}"
+        group: "{{ tomcatgrp }}"
+        mode: 0770
+      loop:
+        - /var/data/imr_files/imr_acq_to_web_ftp/{{ sftpuser }}/upload
+        - /var/data/imr_files/imr_acq_to_web_ftp/{{ sftpuser }}/download
+
+    - name: Check if IP address is already defined
+      lineinfile:
+        state: absent
+        path: "/opt/admin_script/firewallScript.sh"
+        regexp: "{{ sftpip }}"
+      check_mode: true
+      changed_when: false # This just makes things look prettier in the logs
+      register: check
+
+    - name: Adding ip if undefined
+      replace:
+        path: "/opt/admin_script/firewallScript.sh"
+        regexp: '8.8.8.8'
+        replace: "8.8.8.8 {{ sftpip }}"
+      when: check.found == 0
+
+    - name: Apply IPtables
+      command: bash /opt/admin_script/firewallScript.sh
