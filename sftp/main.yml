@@ -1,5 +1,5 @@
 ---
- - hosts: imr
+ - hosts: sftpserver
    become: yes
    tasks:
     - name: Applying the user info var files
